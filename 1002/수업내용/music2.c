@@ -33,7 +33,7 @@ int main(void)
     int total_notes = sizeof(melody) / sizeof(melody[0]);
     int i;
 
-    printf("♪ 학교종이 땡땡땡 연주를 시작합니다... ♪\n");
+    printf("School Bell Melody Start...\n");
 
     for (i = 0; i < total_notes; i++)
     {
