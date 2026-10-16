@@ -6,4 +6,4 @@
 
 <img width="850" height="530" alt="image" src="https://github.com/user-attachments/assets/73b6165b-6a4c-4c97-8acb-3027ea8d577a" />
 
-
+AI 기록
