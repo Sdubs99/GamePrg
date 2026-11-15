@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>심연의 덱 v2.0</title>
+<style>
+/* [P01] 기본 화면 스타일 · [P30] 반응형 정리 */
+:root{--bg:#15110e;--panel:#221b17;--panel2:#2d241e;--line:#4a3b30;--bone:#eadfcb;--dim:#a39582;--red:#c0392b;--gold:#dba64a;--blue:#4f8fd6;--green:#5fae6a;--purple:#9a6bd6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(ellipse at 50% 0%,#33261d 0%,var(--bg) 60%);color:var(--bone);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px;min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+h1,h2,h3{font-family:Georgia,"Nanum Myeongjo","Batang",serif;margin:0}
+#app{max-width:1100px;margin:0 auto;padding:12px;min-height:100vh;display:flex;flex-direction:column}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 16px;transition:.15s}
+.btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--red);border-color:#e0584a;font-weight:700}
+.btn.primary:hover:not(:disabled){background:#d8493a;color:#fff}
+.btn.sm{padding:5px 10px;font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.center{text-align:center}.dim{color:var(--dim)}.gold{color:var(--gold)}.red{color:#e8695b}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row.c{justify-content:center}
+/* 타이틀 */
+.title{padding:26px 0 10px;text-align:center}
+.title h1{font-size:54px;letter-spacing:6px;color:var(--gold);text-shadow:0 0 24px #b3261e88}
+.title p{color:var(--dim);margin:6px 0 0}
+.classes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.cls{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.15s}
+.cls:hover{transform:translateY(-3px)}.cls.on{border-color:var(--gold);background:#30251c}
+.cls .big{font-size:44px}
+/* 상단 바 */
+.top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:14px}
+.top .sp{flex:1}
+.stressbar{width:110px;height:10px;background:#120e0c;border:1px solid var(--line);border-radius:6px;overflow:hidden;display:inline-block;vertical-align:middle}
+.stressbar i{display:block;height:100%;background:linear-gradient(90deg,#6b4aa8,#c084fc)}
+.relic{font-size:20px;cursor:help}
+/* 전투 */
+.field{display:flex;justify-content:space-around;align-items:flex-end;gap:10px;padding:28px 10px 10px;min-height:300px}
+.unit{text-align:center;width:150px;position:relative;border-radius:12px;padding:6px;border:2px solid transparent}
+.unit .face{font-size:64px;line-height:1.1;filter:drop-shadow(0 6px 6px #0008)}
+.unit.enemy{cursor:pointer}.unit.enemy.tg{border-color:var(--gold);background:#dba64a14}
+.unit.dead{opacity:.15;pointer-events:none}
+.enemies{display:flex;gap:6px;align-items:flex-end}
+.hpbar{height:14px;background:#120e0c;border:1px solid var(--line);border-radius:7px;overflow:hidden;position:relative;margin-top:4px}
+.hpbar i{display:block;height:100%;background:linear-gradient(90deg,#8e2219,#d8493a);transition:width .3s}
+.hpbar span{position:absolute;inset:0;font-size:11px;line-height:13px;text-align:center;font-weight:700}
+.intent{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:2px 9px;font-size:13px;display:inline-block;margin-bottom:4px;white-space:nowrap}
+.chips{min-height:22px;margin-top:4px;font-size:12px}
+.chip{display:inline-block;background:#0007;border-radius:9px;padding:1px 6px;margin:1px;cursor:help}
+.chip.blk{background:#2b4a70}
+.log{text-align:center;color:var(--dim);min-height:22px;font-size:13px}
+.bottom{display:flex;align-items:flex-end;gap:10px;padding:8px 0}
+.side{width:96px;text-align:center;flex:none}
+.orb{width:66px;height:66px;border-radius:50%;margin:0 auto 6px;background:radial-gradient(circle at 35% 30%,#ffd98a,#c9741c);color:#2a1505;font-weight:800;font-size:22px;line-height:66px;box-shadow:0 0 18px #dba64a77}
+.hand{flex:1;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;min-height:176px}
+.card{width:118px;height:170px;background:linear-gradient(#3a2e26,#2a211b);border:2px solid var(--line);border-radius:10px;padding:6px;position:relative;cursor:pointer;transition:.12s;text-align:center;display:flex;flex-direction:column;flex:none}
+.card:hover{transform:translateY(-10px) scale(1.04);z-index:5;border-color:var(--gold)}
+.card.atk{border-top:5px solid var(--red)}.card.skl{border-top:5px solid var(--blue)}.card.pow{border-top:5px solid var(--purple)}
+.card.no{opacity:.45}.card.up .nm{color:#8fe39a}
+.card .cost{position:absolute;left:-8px;top:-10px;width:28px;height:28px;border-radius:50%;background:var(--gold);color:#2a1505;font-weight:800;line-height:28px;font-size:15px}
+.card .key{position:absolute;right:5px;top:3px;font-size:10px;color:var(--dim)}
+.card .nm{font-weight:700;font-size:14px;margin-top:8px}
+.card .ic{font-size:30px;margin:4px 0}
+.card .ds{font-size:11.5px;line-height:1.35;color:#d6c8b2;flex:1}
+.card .rar{font-size:10px;color:var(--dim)}
+.card.r2{box-shadow:0 0 0 1px #4f8fd6aa}.card.r3{box-shadow:0 0 0 1px #dba64a,0 0 12px #dba64a55}
+/* 맵 */
+.map{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.fl{width:66px;border:1px solid var(--line);border-radius:8px;padding:6px 2px;text-align:center;font-size:12px;background:var(--panel)}
+.fl.done{opacity:.35}.fl.now{border-color:var(--gold);background:#30251c}
+.fl b{display:block;font-size:20px}
+.nodes{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.node{width:170px;padding:18px 10px;text-align:center;background:var(--panel);border:2px solid var(--line);border-radius:12px;cursor:pointer;transition:.15s}
+.node:hover{border-color:var(--gold);transform:translateY(-4px)}.node b{font-size:40px;display:block}
+.grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.shopitem{text-align:center}.shopitem .price{margin-top:6px}
+/* 모달 · 토스트 · 연출 */
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
+#modal.on{display:flex}
+#modal .box{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:18px;max-width:820px;width:100%;max-height:88vh;overflow:auto}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#000d;border:1px solid var(--gold);border-radius:20px;padding:8px 18px;opacity:0;transition:.25s;pointer-events:none;z-index:60;text-align:center}
+#toast.on{opacity:1}
+.float{position:fixed;font-weight:800;font-size:24px;pointer-events:none;z-index:40;animation:floatup .9s ease-out forwards;text-shadow:0 2px 4px #000}
+@keyframes floatup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-60px)}}
+.shake{animation:shake .3s}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.flash{animation:flash .35s}
+@keyframes flash{50%{filter:brightness(1.8)}}
+table.kv{border-collapse:collapse;width:100%}table.kv td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+ol.dev{columns:2;column-gap:24px;padding-left:22px;margin:8px 0}ol.dev li{margin:3px 0;font-size:13px}
+@media(max-width:760px){
+ .title h1{font-size:36px}.classes{grid-template-columns:1fr}
+ .unit{width:104px}.unit .face{font-size:44px}.field{min-height:220px;padding:8px 0}
+ .card{width:92px;height:140px}.card .ic{font-size:20px;margin:1px 0}.card .ds{font-size:10px}.card .nm{font-size:12px}
+ .side{width:64px}.orb{width:48px;height:48px;line-height:48px;font-size:17px}ol.dev{columns:1}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"><div class="box" id="modalbox"></div></div>
+<div id="toast"></div>
+<script>
+'use strict';
+/* =====================================================================
+   심연의 덱 (Deck of the Abyss) — 턴제 덱빌딩 카드 로그라이크
+   프롬프트 30개로 만든 바이브 코딩 과제 · [Pnn] = 해당 프롬프트 번호
+   ===================================================================== */
+const $=s=>document.querySelector(s);
+const rnd=n=>Math.floor(Math.random()*n);
+const rint=(a,b)=>a+rnd(b-a+1);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ---------- [P02][P04][P13][P17] 카드 데이터: e=기본 효과, u=강화 시 덮어쓰는 값 ---------- */
+const CARDS={
+ strike:{n:'타격',t:'atk',c:1,cls:'basic',r:0,ic:'🗡️',e:{dmg:6},u:{dmg:9}},
+ defend:{n:'수비',t:'skl',c:1,cls:'basic',r:0,ic:'🛡️',e:{block:5},u:{block:8}},
+ // 전사
+ bash:{n:'강타',t:'atk',c:2,cls:'warrior',r:1,ic:'🔨',e:{dmg:8,vuln:2},u:{dmg:10,vuln:3}},
+ cleave:{n:'휩쓸기',t:'atk',c:1,cls:'warrior',r:1,ic:'🪓',e:{dmg:7,aoe:1},u:{dmg:10}},
+ ironwall:{n:'철벽',t:'skl',c:2,cls:'warrior',r:1,ic:'🧱',e:{block:12},u:{block:16}},
+ heavy:{n:'육중한 일격',t:'atk',c:2,cls:'warrior',r:2,ic:'⚒️',e:{dmg:16},u:{dmg:22}},
+ warcry:{n:'전투 함성',t:'skl',c:0,cls:'warrior',r:2,ic:'📯',e:{draw:2,exhaust:1},u:{draw:3}},
+ bloodlet:{n:'혈기',t:'skl',c:0,cls:'warrior',r:2,ic:'🩸',e:{selfDmg:3,en:2},u:{en:3}},
+ rage:{n:'격노',t:'pow',c:1,cls:'warrior',r:3,ic:'🔥',e:{str:2},u:{str:3}},
+ // 도적
+ shiv:{n:'단검 투척',t:'atk',c:0,cls:'rogue',r:1,ic:'🔪',e:{dmg:4},u:{dmg:6}},
+ pstab:{n:'독 찌르기',t:'atk',c:1,cls:'rogue',r:1,ic:'🐍',e:{dmg:5,poison:3},u:{dmg:6,poison:5}},
+ flurry:{n:'연속 베기',t:'atk',c:1,cls:'rogue',r:2,ic:'🌪️',e:{dmg:3,hits:3},u:{dmg:4}},
+ dodge:{n:'회피',t:'skl',c:1,cls:'rogue',r:1,ic:'💨',e:{block:6,draw:1},u:{block:9}},
+ toxin:{n:'맹독 살포',t:'skl',c:1,cls:'rogue',r:2,ic:'🧪',e:{poison:3,aoe:1},u:{poison:5}},
+ trip:{n:'다리 걸기',t:'skl',c:1,cls:'rogue',r:1,ic:'🦶',e:{weak:2,block:4},u:{weak:3,block:6}},
+ backstab:{n:'기습',t:'atk',c:0,cls:'rogue',r:3,ic:'🎯',e:{dmg:11,exhaust:1},u:{dmg:15}},
+ // 마법사
+ firebolt:{n:'화염구',t:'atk',c:1,cls:'mage',r:1,ic:'☄️',e:{dmg:9},u:{dmg:12}},
+ frost:{n:'서리 방벽',t:'skl',c:1,cls:'mage',r:1,ic:'❄️',e:{block:7,weak:1},u:{block:10}},
+ chain:{n:'연쇄 번개',t:'atk',c:2,cls:'mage',r:2,ic:'⚡',e:{dmg:7,aoe:1,vuln:1},u:{dmg:10}},
+ drain:{n:'생명 흡수',t:'atk',c:1,cls:'mage',r:2,ic:'🧛',e:{dmg:6,heal:3},u:{dmg:8,heal:4}},
+ meditate:{n:'명상',t:'skl',c:1,cls:'mage',r:1,ic:'🧘',e:{block:4,stress:-10},u:{block:6,stress:-15}},
+ meteor:{n:'유성',t:'atk',c:3,cls:'mage',r:3,ic:'🌠',e:{dmg:24},u:{dmg:32}},
+ arcane:{n:'비전 집중',t:'pow',c:2,cls:'mage',r:3,ic:'🔮',e:{enPlus:1},u:{c:1}},
+ // 공용
+ rally:{n:'재정비',t:'skl',c:1,cls:'neutral',r:1,ic:'🚩',e:{block:8,stress:-5},u:{block:11,stress:-8}},
+ firstaid:{n:'응급 처치',t:'skl',c:1,cls:'neutral',r:2,ic:'🩹',e:{heal:5,exhaust:1},u:{heal:8}},
+ focus:{n:'집중',t:'skl',c:0,cls:'neutral',r:2,ic:'👁️',e:{draw:1,en:1,exhaust:1},u:{draw:2}},
+};
+const RAR=['기본','일반','고급','희귀'];
+const TYPE={atk:'공격',skl:'스킬',pow:'파워'};
+const eff=c=>c.up?Object.assign({},CARDS[c.id].e,CARDS[c.id].u):CARDS[c.id].e;
+const costOf=c=>{const d=CARDS[c.id];return (c.up&&d.u.c!==undefined)?d.u.c:d.c;};
+const cname=c=>CARDS[c.id].n+(c.up?'+':'');
+
+/* ---------- [P22] 직업 ---------- */
+const CLS={
+ warrior:{n:'전사',ic:'⚔️',hp:80,relic:'flask',d:'높은 체력과 묵직한 한 방',deck:['strike','strike','strike','strike','defend','defend','defend','defend','bash','cleave']},
+ rogue:{n:'도적',ic:'🥷',hp:68,relic:'fang',d:'독과 0코스트 연속 공격',deck:['strike','strike','strike','defend','defend','defend','defend','shiv','shiv','pstab']},
+ mage:{n:'마법사',ic:'🧙',hp:62,relic:'crystal',d:'강력한 주문과 스트레스 관리',deck:['strike','strike','strike','defend','defend','defend','defend','firebolt','firebolt','frost']},
+};
+/* ---------- [P14] 유물 ---------- */
+const RELICS={
+ flask:{n:'붉은 물약병',ic:'🧪',d:'전투가 끝나면 HP 5 회복'},
+ fang:{n:'독사 송곳니',ic:'🦷',d:'전투 시작 시 모든 적에게 독 3'},
+ crystal:{n:'마력 수정',ic:'💎',d:'첫 턴 에너지 +1'},
+ whet:{n:'낡은 숫돌',ic:'🪨',d:'전투 시작 시 힘 +1'},
+ charm:{n:'철갑 부적',ic:'🧿',d:'매 턴 시작 시 방어도 +3'},
+ coin:{n:'행운의 동전',ic:'🪙',d:'전투 승리 시 골드 +12'},
+ incense:{n:'평온의 향',ic:'🕯️',d:'전투 승리 시 스트레스 -8'},
+ thorn:{n:'가시 갑옷',ic:'🌵',d:'공격받을 때마다 공격자에게 피해 3'},
+ bag:{n:'여행자의 가방',ic:'🎒',d:'첫 턴에 카드 2장 추가 드로우'},
+};
+/* ---------- [P05][P08][P23] 적: mv = 행동 패턴 (a 공격, n 횟수, b 방어) ---------- */
+const EN={
+ slime:{n:'슬라임',ic:'🟢',hp:[22,27],mv:[{a:6},{a:4,weak:1},{b:6}]},
+ goblin:{n:'고블린',ic:'👺',hp:[15,19],mv:[{a:3,n:2},{a:7},{b:5,str:1}]},
+ skel:{n:'해골 병사',ic:'💀',hp:[27,33],mv:[{a:9},{a:6,b:6},{a:5,vuln:1}]},
+ bat:{n:'흡혈 박쥐',ic:'🦇',hp:[12,15],mv:[{a:2,n:3},{a:4,stress:6}]},
+ spider:{n:'독거미',ic:'🕷️',hp:[18,22],mv:[{a:3,poison:3},{a:6},{b:7}]},
+ wraith:{n:'망령',ic:'👻',hp:[21,25],mv:[{a:4,stress:10},{a:8},{stress:8,weak:1}]},
+ ogre:{n:'오우거',ic:'👹',hp:[66,72],elite:1,mv:[{a:15},{a:8,vuln:2},{b:10,str:2}]},
+ necro:{n:'사령술사',ic:'☠️',hp:[56,62],elite:1,mv:[{a:5,stress:14},{a:11},{b:12,str:2},{a:4,n:3}]},
+ lord:{n:'심연의 군주',ic:'🐉',hp:[145,145],boss:1,seq:1,mv:[{a:11},{a:5,n:3},{b:12,str:2},{a:8,stress:15},{a:17}]},
+};
+const ENCOUNTERS=[
+ [['slime'],['goblin','goblin'],['bat','bat'],['spider']],
+ [['skel','goblin'],['wraith','bat'],['slime','spider'],['skel','bat']],
+ [['skel','wraith'],['spider','spider','bat'],['goblin','goblin','goblin'],['wraith','skel']],
+];
+const NODE={battle:['⚔️','전투'],elite:['👹','엘리트'],boss:['🐉','보스'],rest:['🔥','휴식처'],shop:['🛒','상점'],event:['❓','이벤트']};
+const FLOORS=12;
+
+/* ---------- [P27][P29] 저장 · 기록 (localStorage, 실패해도 게임은 계속) ---------- */
+const store={
+ get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
+ set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},
+ del(k){try{localStorage.removeItem(k);}catch(e){}}
+};
+let META=Object.assign({runs:0,wins:0,bestFloor:0,bestScore:0,kills:0,asc:0,mute:false},store.get('abyss_meta',{}));
+const saveMeta=()=>store.set('abyss_meta',META);
+let G=null;      // 런(모험) 상태
+let C=null;      // 전투 상태
+let UI={cls:'warrior',asc:0};
+let fxq=[];      // 연출 대기열
+
+/* ---------- [P25] 효과음 (WebAudio 합성음) ---------- */
+let AC=null;
+function sfx(k){
+ if(META.mute)return;
+ try{
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  const S={hit:[160,.12,'sawtooth'],block:[420,.08,'square'],card:[620,.05,'triangle'],no:[110,.12,'square'],win:[784,.3,'triangle'],lose:[90,.5,'sawtooth'],buff:[520,.15,'sine'],gold:[988,.1,'triangle']}[k];
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type=S[2];o.frequency.value=S[0];g.gain.value=.07;
+  g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+S[1]);
+  o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+S[1]);
+ }catch(e){}
+}
+function toast(m){const t=$('#toast');t.innerHTML=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1700);}
+/* ---------- [P24] 연출: 피격 흔들림 + 숫자 팝업 ---------- */
+function fx(sel,text,color,cls){fxq.push({sel,text,color,cls});}
+function flushFx(){
+ const q=fxq;fxq=[];
+ q.forEach((f,i)=>{
+  const el=$(f.sel);if(!el)return;
+  if(f.cls){el.classList.remove(f.cls);void el.offsetWidth;el.classList.add(f.cls);}
+  if(f.text){const r=el.getBoundingClientRect();const d=document.createElement('div');d.className='float';d.textContent=f.text;d.style.color=f.color||'#fff';
+   d.style.left=(r.left+r.width/2-14+(i%3)*14)+'px';d.style.top=(r.top+10+(i%4)*12)+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),900);}
+ });
+}
+
+/* =============================== 런 진행 =============================== */
+/* [P15] 분기 맵 생성 */
+function genMap(){
+ const m=[];
+ for(let f=0;f<FLOORS;f++){
+  if(f===0){m.push(['battle']);continue;}
+  if(f===FLOORS-1){m.push(['boss']);continue;}
+  if(f===FLOORS-2){m.push(['rest','shop']);continue;}
+  if(f===5){m.push(['elite','rest']);continue;}
+  const pool=['battle','battle','battle','event','event','shop','rest'];
+  if(f>=3)pool.push('elite');
+  const o=new Set(['battle']);
+  const want=rint(2,3);let guard=0;
+  while(o.size<want&&guard++<30)o.add(pick(pool));
+  m.push(shuffle([...o]));
+ }
+ return m;
+}
+function newRun(){
+ const k=CLS[UI.cls];
+ G={cls:UI.cls,asc:UI.asc,hp:k.hp,maxHp:k.hp,gold:60,stress:0,floor:0,map:genMap(),
+    deck:k.deck.map(id=>({id,up:false})),relics:[k.relic],
+    run:{kills:0,played:0,dmg:0,turns:0},screen:'map'};
+ META.runs++;saveMeta();C=null;goMap();
+}
+function goMap(){G.screen='map';store.set('abyss_save',G);render();}
+function continueRun(){const s=store.get('abyss_save',null);if(!s)return;G=s;C=null;G.screen='map';render();}
+const has=id=>G.relics.includes(id);
+function heal(n){const b=G.hp;G.hp=Math.min(G.maxHp,G.hp+n);if(G.hp>b)fx('#player','+'+(G.hp-b),'#7ee08a');}
+/* [P20] 스트레스: 100이 되면 붕괴 또는 각성 판정 */
+function addStress(n){
+ if(!n)return;
+ G.stress=clamp(G.stress+n,0,100);
+ fx('#player',(n>0?'😱+':'😌')+n,n>0?'#c084fc':'#9ad0ff');
+ if(G.stress>=100&&C&&!C.over)resolveStress();
+}
+function resolveStress(){
+ if(Math.random()<0.35){G.stress=0;C.st.str+=3;heal(12);toast('✨ <b>각성!</b> 시련을 이겨냈습니다 — 힘 +3 · HP 12 회복');sfx('buff');}
+ else{G.stress=55;C.st.weak+=2;C.st.vuln+=2;toast('💀 <b>붕괴!</b> 공포에 사로잡혔습니다 — 약화 2 · 취약 2');sfx('lose');}
+}
+function enterNode(t){
+ if(t==='battle'||t==='elite'||t==='boss'){startCombat(t);return;}
+ if(t==='rest'){G.screen='rest';}
+ if(t==='shop'){G.screen='shop';G.shop=genShop();}
+ if(t==='event'){G.screen='event';G.ev={i:rnd(EVENTS.length),res:null};}
+ render();
+}
+function leaveNode(){G.floor++;G.shop=null;G.ev=null;goMap();}
+
+/* =============================== 전투 =============================== */
+function makeEnemy(id){
+ const d=EN[id];const sc=1+0.035*G.floor+0.1*G.asc;
+ const hp=Math.round(rint(d.hp[0],d.hp[1])*(d.boss?1+0.1*G.asc:sc));
+ const e={id,hp,maxHp:hp,block:0,st:{str:0,vuln:0,weak:0,poison:0},mi:-1,intent:null,p2:false};
+ nextIntent(e);return e;
+}
+function nextIntent(e){
+ const mv=EN[e.id].mv;
+ if(EN[e.id].seq)e.mi=(e.mi+1)%mv.length;
+ else{let i;do{i=rnd(mv.length);}while(mv.length>1&&i===e.mi);e.mi=i;}
+ e.intent=mv[e.mi];
+}
+/* [P10] 층에 맞는 적 편성 · [P21] 여러 마리의 적 */
+function startCombat(type){
+ let ids;
+ if(type==='boss')ids=['lord'];
+ else if(type==='elite')ids=[pick(['ogre','necro'])];
+ else ids=pick(ENCOUNTERS[G.floor<3?0:G.floor<7?1:2]);
+ C={type,enemies:[],target:0,turn:0,energy:0,block:0,st:{str:0,vuln:0,weak:0,poison:0,enPlus:0},
+    draw:shuffle(G.deck.map((c,i)=>({id:c.id,up:c.up,k:i}))),hand:[],discard:[],exhaust:[],
+    busy:false,over:false,atkBonus:(G.floor>=8?2:G.floor>=4?1:0)+(G.asc>=2?1:0),msg:'',lowHp:false};
+ C.enemies=ids.map(makeEnemy);
+ G.screen='combat';
+ if(has('whet'))C.st.str+=1;
+ if(has('fang'))C.enemies.forEach(e=>e.st.poison+=3);
+ if(G.stress>=100)resolveStress();
+ startTurn();
+}
+/* [P02][P03][P06] 턴 시작: 방어도 초기화, 에너지 충전, 5장 드로우 */
+function startTurn(){
+ C.turn++;G.run.turns++;C.block=0;
+ C.energy=3+C.st.enPlus+(C.turn===1&&has('crystal')?1:0);
+ if(has('charm'))C.block+=3;
+ if(C.st.poison>0){G.hp-=C.st.poison;fx('#player','☠'+C.st.poison,'#9be36b');C.st.poison--;if(checkEnd())return;}
+ let n=5;
+ if(C.turn===1){if(has('bag'))n+=2;if(G.stress>=50){n-=1;C.msg='불안: 스트레스가 높아 첫 턴에 카드를 1장 덜 뽑았습니다';}}
+ drawCards(n);C.busy=false;render();
+}
+function drawCards(n){
+ for(let i=0;i<n;i++){
+  if(!C.draw.length){if(!C.discard.length)break;C.draw=shuffle(C.discard);C.discard=[];}
+  if(C.hand.length>=10)break;
+  C.hand.push(C.draw.pop());
+ }
+}
+/* [P11][P12] 피해 계산: 힘 → 약화(×0.75) → 취약(×1.5) */
+const playerDmg=(base,t)=>Math.max(0,Math.floor((base+C.st.str)*(C.st.weak>0?.75:1)*(t&&t.st.vuln>0?1.5:1)));
+const enemyDmg=(e,base)=>Math.max(0,Math.floor((base+e.st.str+C.atkBonus)*(e.st.weak>0?.75:1)*(C.st.vuln>0?1.5:1)));
+const alive=()=>C.enemies.filter(e=>e.hp>0);
+function hitEnemy(e,amt,pierce){
+ const idx=C.enemies.indexOf(e);
+ const b=pierce?0:Math.min(e.block,amt);e.block-=b;const d=amt-b;
+ e.hp=Math.max(0,e.hp-d);G.run.dmg+=d;
+ fx('#en'+idx,d>0?'-'+d:'막힘',d>0?'#ff7a6b':'#9ad0ff','shake');sfx(d>0?'hit':'block');
+ if(e.hp<=0){G.run.kills++;META.kills++;}
+ else if(EN[e.id].boss&&!e.p2&&e.hp<=e.maxHp/2){ /* [P23] 보스 2페이즈 */
+  e.p2=true;e.st.str+=3;e.block+=15;toast('🐉 <b>심연의 군주가 격노합니다!</b> 힘 +3 · 방어도 +15');addStress(10);}
+}
+function hitPlayer(amt,e){
+ const b=Math.min(C.block,amt);C.block-=b;const d=amt-b;
+ G.hp-=d;fx('#player',d>0?'-'+d:'방어!',d>0?'#ff7a6b':'#9ad0ff',d>0?'shake':'flash');sfx(d>0?'hit':'block');
+ if(has('thorn')&&e&&e.hp>0)hitEnemy(e,3,true);
+ if(d>0&&!C.lowHp&&G.hp>0&&G.hp<=G.maxHp*0.3){C.lowHp=true;addStress(8);C.msg='빈사 상태! 스트레스가 치솟습니다';}
+}
+/* [P04] 카드 사용 */
+function playCard(i){
+ if(!C||C.busy||C.over)return;
+ const card=C.hand[i];if(!card)return;
+ const d=CARDS[card.id],e=eff(card),cost=costOf(card);
+ if(cost>C.energy){toast('에너지가 부족합니다');sfx('no');return;}
+ let tg=C.enemies[C.target];
+ if(!tg||tg.hp<=0){tg=alive()[0];C.target=C.enemies.indexOf(tg);}   // [P30] 죽은 적을 겨누던 버그 수정
+ C.energy-=cost;C.hand.splice(i,1);sfx('card');
+ if(e.selfDmg){G.hp=Math.max(1,G.hp-e.selfDmg);fx('#player','-'+e.selfDmg,'#ff7a6b');}
+ if(e.dmg){
+  for(let h=0;h<(e.hits||1);h++){
+   const ts=e.aoe?alive():[tg.hp>0?tg:alive()[0]];
+   ts.forEach(t=>{if(t&&t.hp>0)hitEnemy(t,playerDmg(e.dmg,t));});
+  }
+ }
+ if(e.block){C.block+=e.block;fx('#player','🛡'+e.block,'#9ad0ff');sfx('block');}
+ (e.aoe?alive():[tg]).forEach(t=>{if(!t||t.hp<=0)return;
+  if(e.vuln)t.st.vuln+=e.vuln;if(e.weak)t.st.weak+=e.weak;if(e.poison)t.st.poison+=e.poison;});
+ if(e.str){C.st.str+=e.str;sfx('buff');}
+ if(e.enPlus){C.st.enPlus+=e.enPlus;sfx('buff');}
+ if(e.heal)heal(e.heal);
+ if(e.stress)addStress(e.stress);
+ if(e.en)C.energy+=e.en;
+ if(e.draw)drawCards(e.draw);
+ if(d.t==='pow'){/* 파워는 전투 동안 사라짐 */}else if(e.exhaust)C.exhaust.push(card);else C.discard.push(card);
+ G.run.played++;C.msg=cname(card)+' 사용';
+ checkEnd();render();
+}
+function setTarget(i){if(C&&C.enemies[i]&&C.enemies[i].hp>0){C.target=i;render();}}
+/* [P05][P06] 턴 종료 → 적 행동 */
+async function endTurn(){
+ if(!C||C.busy||C.over)return;
+ C.busy=true;C.discard.push(...C.hand);C.hand=[];
+ if(C.st.weak>0)C.st.weak--;
+ const v0=C.st.vuln;render();
+ for(const e of C.enemies){
+  if(e.hp<=0)continue;
+  e.block=0;
+  if(e.st.poison>0){hitEnemy(e,e.st.poison,true);e.st.poison--;render();if(e.hp<=0){await sleep(250);continue;}}
+  await sleep(420);
+  const m=e.intent;
+  if(m.a!=null){for(let h=0;h<(m.n||1);h++){hitPlayer(enemyDmg(e,m.a),e);if(G.hp<=0)break;}}
+  if(m.b)e.block+=m.b;
+  if(m.str)e.st.str+=m.str;
+  if(m.weak)C.st.weak+=m.weak;
+  if(m.vuln)C.st.vuln+=m.vuln;
+  if(m.poison)C.st.poison+=m.poison;
+  if(m.stress)addStress(m.stress);
+  if(e.st.vuln>0)e.st.vuln--;if(e.st.weak>0)e.st.weak--;
+  nextIntent(e);render();
+  if(G.hp<=0)break;
+ }
+ if(v0>0&&C.st.vuln>0)C.st.vuln--;
+ if(checkEnd())return;
+ await sleep(250);startTurn();
+}
+/* [P07] 승패 판정 */
+function checkEnd(){
+ if(C.over)return true;
+ if(G.hp<=0){G.hp=0;C.over=true;render();setTimeout(()=>gameOver(false),700);return true;}
+ if(!alive().length){C.over=true;render();setTimeout(winCombat,650);return true;}
+ return false;
+}
+/* [P09] 전투 보상 */
+function rollCard(){
+ const w=Math.random();const r=w<.6?1:w<.9?2:3;
+ const pool=Object.keys(CARDS).filter(id=>(CARDS[id].cls===G.cls||CARDS[id].cls==='neutral')&&CARDS[id].r===r);
+ return pick(pool);
+}
+function rollCards(n){const s=new Set();let g=0;while(s.size<n&&g++<50)s.add(rollCard());return [...s];}
+function rollRelic(){const pool=Object.keys(RELICS).filter(id=>!G.relics.includes(id));return pool.length?pick(pool):null;}
+function winCombat(){
+ sfx('win');
+ const type=C.type;
+ if(has('flask'))heal(5);
+ if(has('incense'))G.stress=Math.max(0,G.stress-8);
+ if(G.hp<=G.maxHp*0.3)G.stress=Math.min(100,G.stress+5);
+ let gold=type==='elite'?rint(28,36):rint(12,20);if(has('coin'))gold+=12;
+ G.gold+=gold;G.floor++;
+ if(type==='boss'){gameOver(true);return;}
+ G.reward={gold,cards:rollCards(3),relic:type==='elite'?rollRelic():null};
+ if(G.reward.relic)G.relics.push(G.reward.relic);
+ C=null;G.screen='reward';render();
+}
+function takeReward(id){if(id)G.deck.push({id,up:false});G.reward=null;sfx('gold');goMap();}
+
+/* =============================== 휴식 · 상점 · 이벤트 =============================== */
+/* [P16][P17] 휴식처: 회복 또는 카드 강화 */
+function restHeal(){const n=Math.round(G.maxHp*0.3);heal(n);G.stress=Math.max(0,G.stress-15);toast('모닥불 곁에서 쉬었습니다 · HP +'+n+' · 스트레스 -15');leaveNode();}
+function restUpgrade(){pickFromDeck('강화할 카드를 고르세요',c=>!c.up,i=>{G.deck[i].up=true;sfx('buff');toast(cname(G.deck[i])+' 강화 완료');leaveNode();});}
+/* [P18] 상점 */
+function genShop(){
+ return {cards:rollCards(3).map(id=>({id,price:[0,45,70,105][CARDS[id].r],sold:false})),
+         relic:(()=>{const r=rollRelic();return r?{id:r,price:130,sold:false}:null;})(),removed:false,healed:false};
+}
+function pay(p){if(G.gold<p){toast('골드가 부족합니다');sfx('no');return false;}G.gold-=p;sfx('gold');return true;}
+function buyCard(i){const it=G.shop.cards[i];if(it.sold||!pay(it.price))return;it.sold=true;G.deck.push({id:it.id,up:false});render();}
+function buyRelic(){const it=G.shop.relic;if(!it||it.sold||!pay(it.price))return;it.sold=true;G.relics.push(it.id);render();}
+function buyRemove(){if(G.shop.removed)return;if(G.gold<60){toast('골드가 부족합니다');return;}
+ pickFromDeck('덱에서 제거할 카드를 고르세요 (60 골드)',()=>true,i=>{if(!pay(60))return;G.deck.splice(i,1);G.shop.removed=true;render();});}
+function buyHeal(){if(G.shop.healed||!pay(40))return;G.shop.healed=true;heal(15);render();}
+/* [P19] 랜덤 이벤트 */
+const EVENTS=[
+ {t:'수상한 제단',ic:'🗿',d:'핏자국이 말라붙은 제단 위에서 무언가 희미하게 빛납니다.',o:[
+  ['피를 바친다 (HP -8, 유물 획득)',()=>{const r=rollRelic();if(!r)return '제단은 반응하지 않았습니다.';G.hp=Math.max(1,G.hp-8);G.relics.push(r);return '제단이 '+RELICS[r].ic+' <b>'+RELICS[r].n+'</b>을(를) 내어놓았습니다.';}],
+  ['지나친다',()=>'불길한 기운을 뒤로하고 걸음을 옮깁니다.']]},
+ {t:'고요한 샘',ic:'⛲',d:'어둠 속에서 맑은 물소리가 들립니다.',o:[
+  ['물을 마신다 (HP +15)',()=>{heal(15);return '상처가 아물었습니다.';}],
+  ['눈을 감고 쉰다 (스트레스 -25)',()=>{G.stress=Math.max(0,G.stress-25);return '마음이 한결 가벼워졌습니다.';}]]},
+ {t:'저주받은 상자',ic:'🧰',d:'낡은 상자에서 속삭임이 새어 나옵니다.',o:[
+  ['연다 (골드 +60, 스트레스 +20)',()=>{G.gold+=60;G.stress=Math.min(100,G.stress+20);return '금화가 쏟아졌지만 속삭임이 머릿속에 남았습니다.';}],
+  ['열지 않는다',()=>'상자를 그대로 두고 떠납니다.']]},
+ {t:'떠돌이 교관',ic:'🧓',d:'늙은 용병이 한 수 가르쳐 주겠다고 합니다.',o:[
+  ['배운다 (무작위 카드 강화)',()=>{const c=G.deck.filter(x=>!x.up);if(!c.length)return '더 배울 것이 없습니다.';const k=pick(c);k.up=true;return '<b>'+cname(k)+'</b>(으)로 강화되었습니다.';}],
+  ['대련한다 (HP -6, 최대 HP +5)',()=>{G.hp=Math.max(1,G.hp-6);G.maxHp+=5;return '몸이 한층 단단해졌습니다.';}]]},
+];
+function evChoose(i){G.ev.res=EVENTS[G.ev.i].o[i][1]();sfx('buff');render();}
+
+/* [P07][P29] 게임 종료 · 점수 · 기록 */
+function gameOver(win){
+ sfx(win?'win':'lose');
+ const score=G.floor*10+G.run.kills*2+Math.floor(G.gold/10)+(win?100:0)+G.asc*50;
+ META.bestFloor=Math.max(META.bestFloor,G.floor);META.bestScore=Math.max(META.bestScore,score);
+ let unlocked=false;
+ if(win){META.wins++;if(G.asc>=META.asc&&META.asc<3){META.asc=G.asc+1;unlocked=true;}}
+ saveMeta();store.del('abyss_save');
+ G.end={win,score,unlocked};C=null;G.screen='end';render();
+}
+function toTitle(){G=null;C=null;render();}
+
+/* =============================== 화면 그리기 =============================== */
+function descOf(c,live){
+ const e=eff(c),p=[];
+ if(e.selfDmg)p.push('HP '+e.selfDmg+' 잃음');
+ if(e.dmg){const v=live?playerDmg(e.dmg,e.aoe?null:C.enemies[C.target]):e.dmg;p.push((e.aoe?'모든 적에게 ':'')+'피해 <b>'+v+'</b>'+(e.hits?' ×'+e.hits:''));}
+ if(e.block)p.push('방어도 <b>'+e.block+'</b>');
+ if(e.vuln)p.push('취약 '+e.vuln);if(e.weak)p.push('약화 '+e.weak);
+ if(e.poison)p.push((e.aoe&&!e.dmg?'모든 적에게 ':'')+'독 '+e.poison);
+ if(e.str)p.push('힘 +'+e.str);if(e.enPlus)p.push('매 턴 에너지 +'+e.enPlus);
+ if(e.heal)p.push('HP '+e.heal+' 회복');if(e.stress)p.push('스트레스 '+e.stress);
+ if(e.en)p.push('에너지 +'+e.en);if(e.draw)p.push('카드 '+e.draw+'장 뽑기');
+ if(e.exhaust)p.push('<i>소멸</i>');
+ return p.join(' · ');
+}
+function cardHTML(c,attr,opt){
+ opt=opt||{};const d=CARDS[c.id];
+ return '<div class="card '+d.t+' r'+d.r+(c.up?' up':'')+(opt.no?' no':'')+'" '+(attr||'')+'>'+
+  '<div class="cost">'+costOf(c)+'</div>'+(opt.key?'<div class="key">'+opt.key+'</div>':'')+
+  '<div class="nm">'+cname(c)+'</div><div class="ic">'+d.ic+'</div><div class="ds">'+descOf(c,opt.live)+'</div>'+
+  '<div class="rar">'+TYPE[d.t]+' · '+RAR[d.r]+'</div></div>';
+}
+const KEYWORD={str:['💪','힘','공격 피해가 수치만큼 증가'],vuln:['💔','취약','받는 피해 50% 증가'],weak:['🌀','약화','주는 피해 25% 감소'],poison:['☠️','독','턴 시작 시 수치만큼 피해, 이후 1 감소'],enPlus:['🔮','비전 집중','매 턴 에너지 추가']};
+function chips(st,block){
+ let h=block>0?'<span class="chip blk" title="방어도: 피해를 대신 막고 턴 시작 시 사라짐">🛡️'+block+'</span>':'';
+ for(const k in KEYWORD)if(st[k]>0)h+='<span class="chip" title="'+KEYWORD[k][1]+': '+KEYWORD[k][2]+'">'+KEYWORD[k][0]+st[k]+'</span>';
+ return h;
+}
+const hpbar=(a,b)=>'<div class="hpbar"><i style="width:'+Math.max(0,a/b*100)+'%"></i><span>'+a+' / '+b+'</span></div>';
+function intentHTML(e){
+ const m=e.intent;let h='';
+ if(m.a!=null)h+='⚔️'+enemyDmg(e,m.a)+(m.n?'×'+m.n:'')+' ';
+ if(m.b)h+='🛡️'+m.b+' ';if(m.str)h+='💪 ';if(m.weak||m.vuln||m.poison)h+='🌀 ';if(m.stress)h+='😱 ';
+ return h;
+}
+function topbar(){
+ const k=CLS[G.cls];
+ return '<div class="top"><b>'+k.ic+' '+k.n+'</b><span>❤️ '+G.hp+'/'+G.maxHp+'</span><span class="gold">🪙 '+G.gold+'</span>'+
+  '<span title="스트레스: 100이 되면 붕괴(약화·취약) 또는 각성(힘·회복) 판정. 50 이상이면 첫 턴 드로우 -1">😱 <span class="stressbar"><i style="width:'+G.stress+'%"></i></span> '+G.stress+'</span>'+
+  '<span>🗺️ '+Math.min(G.floor+1,FLOORS)+'/'+FLOORS+'층'+(G.asc?' · 난이도 '+G.asc:'')+'</span>'+
+  '<span>'+G.relics.map(r=>'<span class="relic" title="'+RELICS[r].n+': '+RELICS[r].d+'">'+RELICS[r].ic+'</span>').join('')+'</span>'+
+  '<span class="sp"></span><button class="btn sm" onclick="showDeck()">덱 '+G.deck.length+' (D)</button>'+
+  '<button class="btn sm" onclick="showHelp()">도움말</button><button class="btn sm" onclick="toggleMute()">'+(META.mute?'🔇':'🔊')+'</button></div>';
+}
+function render(){
+ const a=$('#app');
+ if(!G){a.innerHTML=titleHTML();return;}
+ const s=G.screen;
+ a.innerHTML=topbar()+(s==='combat'?combatHTML():s==='map'?mapHTML():s==='reward'?rewardHTML():s==='rest'?restHTML():s==='shop'?shopHTML():s==='event'?eventHTML():endHTML());
+ flushFx();
+}
+function titleHTML(){
+ const save=store.get('abyss_save',null);
+ return '<div class="title"><h1>심연의 덱</h1><p>DECK OF THE ABYSS · 턴제 덱빌딩 카드 로그라이크 v2.0</p></div>'+
+  '<div class="classes">'+Object.keys(CLS).map(k=>{const c=CLS[k];return '<div class="cls'+(UI.cls===k?' on':'')+'" onclick="UI.cls=\''+k+'\';render()"><div class="big">'+c.ic+'</div><h3>'+c.n+'</h3><div class="dim">'+c.d+'</div><div style="margin-top:6px">❤️ '+c.hp+' · '+RELICS[c.relic].ic+' '+RELICS[c.relic].n+'</div></div>';}).join('')+'</div>'+
+  '<div class="row c">난이도 '+[0,1,2,3].map(i=>'<button class="btn sm" '+(i>META.asc?'disabled title="이전 난이도 클리어 시 해금"':'')+' style="'+(UI.asc===i?'border-color:var(--gold);color:var(--gold)':'')+'" onclick="UI.asc='+i+';render()">'+(i?'심연 '+i:'보통')+'</button>').join('')+'</div>'+
+  '<div class="row c" style="margin:18px 0"><button class="btn primary" onclick="newRun()">새 모험 시작</button>'+
+  (save?'<button class="btn" onclick="continueRun()">이어하기 ('+CLS[save.cls].n+' · '+(save.floor+1)+'층)</button>':'')+
+  '<button class="btn" onclick="showHelp()">게임 방법</button><button class="btn" onclick="showDev()">개발 로그 (프롬프트 30)</button></div>'+
+  '<div class="panel center dim">기록 — 도전 '+META.runs+'회 · 클리어 '+META.wins+'회 · 최고 '+META.bestFloor+'층 · 최고 점수 '+META.bestScore+' · 처치 '+META.kills+'</div>';
+}
+function combatHTML(){
+ const k=CLS[G.cls];
+ return '<div class="field"><div class="unit" id="player"><div class="face">'+k.ic+'</div><b>'+k.n+'</b>'+hpbar(G.hp,G.maxHp)+'<div class="chips">'+chips(C.st,C.block)+'</div></div>'+
+  '<div class="enemies">'+C.enemies.map((e,i)=>'<div class="unit enemy'+(e.hp<=0?' dead':'')+(i===C.target&&e.hp>0?' tg':'')+'" id="en'+i+'" onclick="setTarget('+i+')">'+
+   '<div class="intent" title="다음 행동">'+(e.hp>0?intentHTML(e):'')+'</div><div class="face">'+EN[e.id].ic+'</div><b>'+EN[e.id].n+'</b>'+hpbar(e.hp,e.maxHp)+'<div class="chips">'+chips(e.st,e.block)+'</div></div>').join('')+'</div></div>'+
+  '<div class="log">'+(C.busy&&!C.over?'적의 턴…':C.msg||'카드를 클릭하거나 숫자 키로 사용 · 적을 클릭해 대상 지정')+'</div>'+
+  '<div class="bottom"><div class="side"><div class="orb" title="에너지">'+C.energy+'</div><button class="btn sm" onclick="showPile(\'draw\')">뽑을 덱 '+C.draw.length+'</button></div>'+
+  '<div class="hand">'+C.hand.map((c,i)=>cardHTML(c,'onclick="playCard('+i+')"',{key:(i+1)%10,no:costOf(c)>C.energy,live:true})).join('')+'</div>'+
+  '<div class="side"><button class="btn primary" '+(C.busy||C.over?'disabled':'')+' onclick="endTurn()">턴 종료<br><small>(E)</small></button><div style="height:6px"></div><button class="btn sm" onclick="showPile(\'discard\')">버린 덱 '+C.discard.length+'</button></div></div>';
+}
+function mapHTML(){
+ return '<div class="center" style="margin-top:8px"><h2>'+(G.floor+1)+'층 — 갈 길을 고르세요</h2></div>'+
+  '<div class="map">'+G.map.map((o,f)=>'<div class="fl'+(f<G.floor?' done':f===G.floor?' now':'')+'">'+(f+1)+'층<b>'+o.map(t=>NODE[t][0]).join('')+'</b></div>').join('')+'</div>'+
+  '<div class="nodes">'+G.map[G.floor].map(t=>'<div class="node" onclick="enterNode(\''+t+'\')"><b>'+NODE[t][0]+'</b>'+NODE[t][1]+'</div>').join('')+'</div>'+
+  '<p class="center dim">진행 상황은 지도 화면에서 자동 저장됩니다.</p>';
+}
+function rewardHTML(){
+ const r=G.reward;
+ return '<div class="panel center" style="margin-top:20px"><h2>전투 승리!</h2><p class="gold">🪙 골드 +'+r.gold+(r.relic?' · 유물 획득: '+RELICS[r.relic].ic+' '+RELICS[r.relic].n+' ('+RELICS[r.relic].d+')':'')+'</p>'+
+  '<p>덱에 추가할 카드 1장을 고르세요</p><div class="grid">'+r.cards.map(id=>cardHTML({id,up:false},'onclick="takeReward(\''+id+'\')"')).join('')+'</div>'+
+  '<p><button class="btn" onclick="takeReward(null)">건너뛰기</button></p></div>';
+}
+function restHTML(){
+ return '<div class="panel center" style="margin-top:20px"><div style="font-size:60px">🔥</div><h2>휴식처</h2><p class="dim">모닥불이 타닥거립니다. 무엇을 하시겠습니까?</p>'+
+  '<div class="row c"><button class="btn primary" onclick="restHeal()">휴식 — HP 30% 회복 · 스트레스 -15</button><button class="btn" onclick="restUpgrade()">단련 — 카드 1장 강화</button></div></div>';
+}
+function shopHTML(){
+ const s=G.shop;
+ return '<div class="panel center" style="margin-top:20px"><h2>🛒 상점</h2><div class="grid" style="margin:14px 0">'+
+  s.cards.map((it,i)=>'<div class="shopitem">'+cardHTML({id:it.id,up:false},'onclick="buyCard('+i+')"',{no:it.sold})+'<div class="price gold">'+(it.sold?'판매 완료':'🪙 '+it.price)+'</div></div>').join('')+'</div>'+
+  '<div class="row c">'+(s.relic?'<button class="btn" '+(s.relic.sold?'disabled':'')+' onclick="buyRelic()" title="'+RELICS[s.relic.id].d+'">'+RELICS[s.relic.id].ic+' '+RELICS[s.relic.id].n+' — 🪙 '+s.relic.price+'</button>':'')+
+  '<button class="btn" '+(s.removed?'disabled':'')+' onclick="buyRemove()">카드 제거 — 🪙 60</button>'+
+  '<button class="btn" '+(s.healed?'disabled':'')+' onclick="buyHeal()">물약 (HP +15) — 🪙 40</button></div>'+
+  '<p><button class="btn primary" onclick="leaveNode()">상점 나가기</button></p></div>';
+}
+function eventHTML(){
+ const ev=EVENTS[G.ev.i];
+ return '<div class="panel center" style="margin-top:20px"><div style="font-size:60px">'+ev.ic+'</div><h2>'+ev.t+'</h2><p class="dim">'+ev.d+'</p>'+
+  (G.ev.res?'<p>'+G.ev.res+'</p><button class="btn primary" onclick="leaveNode()">계속</button>'
+   :'<div class="row c">'+ev.o.map((o,i)=>'<button class="btn" onclick="evChoose('+i+')">'+o[0]+'</button>').join('')+'</div>')+'</div>';
+}
+function endHTML(){
+ const e=G.end;
+ return '<div class="panel center" style="margin-top:20px"><div style="font-size:70px">'+(e.win?'🏆':'⚰️')+'</div><h1 class="'+(e.win?'gold':'red')+'">'+(e.win?'심연 정복!':'모험 실패')+'</h1>'+
+  '<p class="dim">'+(e.win?'심연의 군주를 쓰러뜨렸습니다.':(G.floor+1)+'층에서 쓰러졌습니다.')+(e.unlocked?' <b class="gold">새 난이도 「심연 '+META.asc+'」 해금!</b>':'')+'</p>'+
+  '<table class="kv" style="max-width:360px;margin:0 auto 14px"><tr><td>도달 층</td><td>'+Math.min(G.floor+(e.win?0:1),FLOORS)+' / '+FLOORS+'</td></tr><tr><td>처치한 적</td><td>'+G.run.kills+'</td></tr><tr><td>사용한 카드</td><td>'+G.run.played+'</td></tr><tr><td>준 피해</td><td>'+G.run.dmg+'</td></tr><tr><td>진행 턴</td><td>'+G.run.turns+'</td></tr><tr><td><b>점수</b></td><td><b class="gold">'+e.score+'</b> (최고 '+META.bestScore+')</td></tr></table>'+
+  '<button class="btn primary" onclick="toTitle()">타이틀로</button></div>';
+}
+
+/* ---------- [P28] 덱 · 더미 보기, 카드 선택 창 ---------- */
+function openModal(h){$('#modalbox').innerHTML=h;$('#modal').classList.add('on');}
+function closeModal(){$('#modal').classList.remove('on');$('#modalbox').innerHTML='';}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+const closeBtn='<p class="center"><button class="btn" onclick="closeModal()">닫기 (Esc)</button></p>';
+function showDeck(){if(!G)return;openModal('<h2>내 덱 ('+G.deck.length+'장)</h2><div class="grid" style="margin-top:14px">'+G.deck.map(c=>cardHTML(c)).join('')+'</div>'+closeBtn);}
+function showPile(k){const p=[...C[k]].sort((a,b)=>a.id<b.id?-1:1);openModal('<h2>'+(k==='draw'?'뽑을 덱':'버린 덱')+' ('+p.length+'장)</h2><p class="dim">순서는 섞여 있습니다.</p><div class="grid">'+p.map(c=>cardHTML(c)).join('')+'</div>'+closeBtn);}
+let pickCb=null;
+function pickFromDeck(title,filter,cb){
+ pickCb=cb;
+ const items=G.deck.map((c,i)=>filter(c)?cardHTML(c,'onclick="closeModal();pickCb('+i+')"'):'').join('');
+ openModal('<h2>'+title+'</h2><div class="grid" style="margin-top:14px">'+(items||'<p class="dim">고를 수 있는 카드가 없습니다.</p>')+'</div>'+closeBtn);
+}
+/* ---------- [P26][P30] 도움말 · 개발 로그 ---------- */
+function showHelp(){
+ openModal('<h2>게임 방법</h2><table class="kv" style="margin-top:10px">'+
+  '<tr><td><b>목표</b></td><td>12층의 던전을 내려가 심연의 군주를 쓰러뜨리세요.</td></tr>'+
+  '<tr><td><b>전투</b></td><td>매 턴 에너지 3으로 손패의 카드를 사용합니다. 턴이 끝나면 적이 머리 위에 표시된 행동(의도)을 실행합니다.</td></tr>'+
+  '<tr><td><b>🛡️ 방어도</b></td><td>피해를 대신 막아 주며 다음 내 턴 시작 시 사라집니다.</td></tr>'+
+  Object.values(KEYWORD).slice(0,4).map(k=>'<tr><td><b>'+k[0]+' '+k[1]+'</b></td><td>'+k[2]+'</td></tr>').join('')+
+  '<tr><td><b>😱 스트레스</b></td><td>적의 공포 공격과 빈사 상태로 쌓입니다. 50 이상이면 첫 턴에 1장 덜 뽑고, 100이 되면 붕괴(약화·취약) 또는 각성(힘 +3·회복) 판정이 일어납니다. 휴식·명상으로 낮출 수 있습니다.</td></tr>'+
+  '<tr><td><b>조작</b></td><td>카드 클릭 또는 숫자 키 1~0 · 적 클릭 또는 Tab으로 대상 변경 · E 턴 종료 · D 덱 보기 · Esc 창 닫기</td></tr></table>'+closeBtn);
+}
+const DEVLOG=['전투 화면 뼈대','덱·손패·버림 더미','에너지와 카드 비용','공격·방어 카드 효과','적 의도와 적 턴','턴 종료와 덱 셔플','승리·패배 판정','적 3종과 행동 패턴','전투 보상 카드 선택','층 진행과 보스',
+ '취약·약화 상태이상','힘·독 추가','카드 26종과 희귀도','유물 시스템','분기 선택 맵','휴식처','카드 강화(+)','상점과 골드','랜덤 이벤트','스트레스 시스템',
+ '다수의 적과 대상 지정','직업 3종','엘리트·보스 2페이즈','피격 연출·숫자 팝업','효과음','단축키·툴팁','저장·이어하기','덱·더미 보기','기록·점수·난이도','버그 수정·밸런스·반응형'];
+function showDev(){openModal('<h2>개발 로그 — 프롬프트 30개</h2><p class="dim">1~10: 기본 게임(v1.0) · 11~30: 업그레이드(v2.0)</p><ol class="dev">'+DEVLOG.map(t=>'<li>'+t+'</li>').join('')+'</ol>'+closeBtn);}
+function toggleMute(){META.mute=!META.mute;saveMeta();render();}
+
+/* ---------- [P26] 키보드 단축키 ---------- */
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'){closeModal();return;}
+ if($('#modal').classList.contains('on')||!G)return;
+ if(e.key==='d'||e.key==='D'||e.key==='ㅇ'){showDeck();return;}
+ if(G.screen!=='combat'||!C)return;
+ if(e.key>='0'&&e.key<='9'){playCard(e.key==='0'?9:+e.key-1);}
+ else if(e.key==='e'||e.key==='E'||e.key==='ㄷ'){endTurn();}
+ else if(e.key==='Tab'){e.preventDefault();const n=C.enemies.length;for(let i=1;i<=n;i++){const j=(C.target+i)%n;if(C.enemies[j].hp>0){C.target=j;break;}}render();}
+});
+render();
+</script>
+</body>
+</html>

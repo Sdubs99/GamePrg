@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>심연의 덱 v1.0</title>
+<style>
+/* [P01] 기본 화면 */
+body{margin:0;background:#1b1b22;color:#eee;font-family:"Malgun Gothic",sans-serif}
+#app{max-width:900px;margin:0 auto;padding:16px}
+h1{text-align:center}
+.field{display:flex;justify-content:space-around;align-items:flex-end;min-height:220px}
+.unit{text-align:center;width:160px}.face{font-size:60px}
+.hp{background:#000;border:1px solid #555;height:16px;border-radius:8px;overflow:hidden;position:relative}
+.hp i{display:block;height:100%;background:#c0392b}.hp span{position:absolute;inset:0;font-size:12px;line-height:16px}
+.intent{background:#333;border-radius:12px;padding:2px 10px;display:inline-block}
+.hand{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:150px;margin:14px 0}
+.card{width:110px;height:140px;background:#2c2c38;border:2px solid #555;border-radius:8px;padding:6px;text-align:center;cursor:pointer;position:relative}
+.card:hover{border-color:#f1c40f}.card.no{opacity:.4}
+.cost{position:absolute;left:-8px;top:-8px;width:26px;height:26px;border-radius:50%;background:#f1c40f;color:#000;font-weight:bold;line-height:26px}
+button{font:inherit;padding:8px 16px;border-radius:6px;border:1px solid #777;background:#333;color:#eee;cursor:pointer}
+.bar{display:flex;justify-content:space-between;align-items:center}
+.center{text-align:center}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+/* 심연의 덱 v1.0 — 프롬프트 1~10으로 만든 기본 게임 */
+const rnd=n=>Math.floor(Math.random()*n);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+/* [P02][P04] 카드 */
+const CARDS={
+ strike:{n:'타격',c:1,dmg:6,d:'피해 6'},
+ defend:{n:'수비',c:1,block:5,d:'방어도 5'},
+ bash:{n:'강타',c:2,dmg:10,d:'피해 10'},
+ heavy:{n:'육중한 일격',c:2,dmg:14,d:'피해 14'},
+ ironwall:{n:'철벽',c:2,block:12,d:'방어도 12'},
+ quick:{n:'빠른 베기',c:0,dmg:4,d:'피해 4'},
+};
+/* [P08] 적 3종 + [P10] 보스 */
+const EN={
+ slime:{n:'슬라임',ic:'🟢',hp:24,mv:[{a:6},{b:6}]},
+ goblin:{n:'고블린',ic:'👺',hp:20,mv:[{a:4},{a:8}]},
+ skel:{n:'해골 병사',ic:'💀',hp:30,mv:[{a:9},{a:6,b:6}]},
+ king:{n:'해골 왕',ic:'☠️',hp:70,mv:[{a:10},{b:10},{a:16}]},
+};
+const STAGES=['slime','goblin','skel','goblin','king'];   // [P10] 층 진행
+let G,C;
+function newGame(){G={hp:70,maxHp:70,floor:0,deck:['strike','strike','strike','strike','strike','defend','defend','defend','defend','bash'],screen:'combat'};startCombat();}
+function startCombat(){
+ const d=EN[STAGES[G.floor]];
+ C={en:{id:STAGES[G.floor],hp:d.hp,maxHp:d.hp,block:0,intent:null},draw:shuffle([...G.deck]),hand:[],discard:[],energy:0,block:0};
+ pickIntent();startTurn();
+}
+const pickIntent=()=>{const mv=EN[C.en.id].mv;C.en.intent=mv[rnd(mv.length)];};   // [P05]
+/* [P02][P03][P06] 턴 시작: 에너지 3, 5장 드로우, 덱이 비면 버린 덱을 섞음 */
+function startTurn(){
+ C.energy=3;C.block=0;
+ for(let i=0;i<5;i++){
+  if(!C.draw.length){C.draw=shuffle(C.discard);C.discard=[];}
+  if(C.draw.length)C.hand.push(C.draw.pop());
+ }
+ render();
+}
+/* [P04] 카드 사용 */
+function play(i){
+ const id=C.hand[i],c=CARDS[id];
+ if(c.c>C.energy)return;
+ C.energy-=c.c;C.hand.splice(i,1);C.discard.push(id);
+ if(c.dmg){const b=Math.min(C.en.block,c.dmg);C.en.block-=b;C.en.hp=Math.max(0,C.en.hp-(c.dmg-b));}
+ if(c.block)C.block+=c.block;
+ if(C.en.hp<=0){win();return;}
+ render();
+}
+/* [P05][P06] 턴 종료 → 적 행동 */
+function endTurn(){
+ C.discard.push(...C.hand);C.hand=[];
+ const m=C.en.intent;C.en.block=0;
+ if(m.a){const b=Math.min(C.block,m.a);C.block-=b;G.hp-=m.a-b;}
+ if(m.b)C.en.block+=m.b;
+ if(G.hp<=0){G.hp=0;G.screen='lose';render();return;}   // [P07]
+ pickIntent();startTurn();
+}
+/* [P07][P09][P10] 승리 → 보상 → 다음 층 */
+function win(){
+ G.floor++;
+ if(G.floor>=STAGES.length){G.screen='win';render();return;}
+ const pool=shuffle(['bash','heavy','ironwall','quick','strike','defend']).slice(0,3);
+ G.reward=pool;G.screen='reward';render();
+}
+function take(id){if(id)G.deck.push(id);G.screen='combat';startCombat();}
+const hp=(a,b)=>'<div class="hp"><i style="width:'+a/b*100+'%"></i><span>'+a+' / '+b+'</span></div>';
+const cardHTML=(id,attr,no)=>'<div class="card'+(no?' no':'')+'" '+attr+'><div class="cost">'+CARDS[id].c+'</div><b>'+CARDS[id].n+'</b><p>'+CARDS[id].d+'</p></div>';
+function render(){
+ const a=document.getElementById('app');
+ if(!G){a.innerHTML='<h1>심연의 덱 v1.0</h1><p class="center"><button onclick="newGame()">게임 시작</button></p>';return;}
+ if(G.screen==='win'||G.screen==='lose'){a.innerHTML='<h1>'+(G.screen==='win'?'🏆 승리!':'⚰️ 패배')+'</h1><p class="center"><button onclick="newGame()">다시 하기</button></p>';return;}
+ if(G.screen==='reward'){a.innerHTML='<h1>전투 승리! 카드 1장을 고르세요</h1><div class="hand">'+G.reward.map(id=>cardHTML(id,'onclick="take(\''+id+'\')"')).join('')+'</div><p class="center"><button onclick="take(null)">건너뛰기</button></p>';return;}
+ const e=C.en,d=EN[e.id],m=e.intent;
+ a.innerHTML='<div class="bar"><b>'+(G.floor+1)+' / '+STAGES.length+' 층</b><span>덱 '+C.draw.length+' · 버림 '+C.discard.length+'</span></div>'+
+  '<div class="field"><div class="unit"><div class="face">🧙</div>'+hp(G.hp,G.maxHp)+'<div>🛡️ '+C.block+'</div></div>'+
+  '<div class="unit"><div class="intent">'+(m.a?'⚔️ '+m.a+' ':'')+(m.b?'🛡️ '+m.b:'')+'</div><div class="face">'+d.ic+'</div><b>'+d.n+'</b>'+hp(e.hp,e.maxHp)+'<div>🛡️ '+e.block+'</div></div></div>'+
+  '<div class="hand">'+C.hand.map((id,i)=>cardHTML(id,'onclick="play('+i+')"',CARDS[id].c>C.energy)).join('')+'</div>'+
+  '<div class="bar"><b>⚡ 에너지 '+C.energy+' / 3</b><button onclick="endTurn()">턴 종료</button></div>';
+}
+render();
+</script>
+</body>
+</html>
